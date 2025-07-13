@@ -29,6 +29,7 @@ class MemorizationTool:
         self.engine = create_engine(db_url)
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
+        self.session_number = 1
 
 
     def menu_display(self):
@@ -91,8 +92,6 @@ class MemorizationTool:
         session = self.Session()
         flashcards = session.query(Flashcard).all()
 
-
-
         if not flashcards:
             print("There is no flashcard to practice!")
 
@@ -103,11 +102,14 @@ class MemorizationTool:
                 print(f"Answer: {card.second_column}")
                 user_response = input('press "y" if your answer is correct:\npress "n" if your answer is wrong:\n').strip()
                 if user_response == "y":
-                    session.query(Flashcard).filter(Flashcard.id == card.id).update({
-                        card.box_number: 2,
-                    })
+                    if card.box_number == 3:
+                        session.delete(card)
+                    else:
+                        card.box_number += 1
+                        session.add(card)
                 elif user_response == "n":
-                    continue
+                    card.box_number = 1
+                    session.add(card)
                 else:
                     print(f"{user_response} is not an option")
             elif see_answer == "n":
@@ -115,7 +117,10 @@ class MemorizationTool:
             elif see_answer == "u":
                 self.update_flashcard(card)
             else:
-                print(f"{see_answer} is not an option")
+                print(f"{see_answer} is not an option")\
+
+        session.commit()
+
 
 
     def run(self):
